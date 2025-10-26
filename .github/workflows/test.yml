@@ -54,7 +54,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        version: [v0.28.1, v0.27.6]
+        version: [v0.31.5, v0.31.3, v0.30.0, v0.28.5]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -111,6 +111,7 @@ jobs:
         run: |
           echo "Error: Action should have failed for non-existent version"
           exit 1
+
 
       - name: Confirm error handling works
         run: echo "✅ Error handling works correctly"
@@ -172,12 +173,12 @@ jobs:
       - name: Install first version
         uses: ./
         with:
-          version: v0.27.6
+          version: v0.28.5
 
       - name: Verify first installation
         run: |
           VERSION=$(buildcache --version)
-          if [[ ! "$VERSION" =~ 0\.27\.6 ]]; then
+          if [[ ! "$VERSION" =~ 0\.28\.5 ]]; then
             echo "Error: First installation failed"
             exit 1
           fi
@@ -186,16 +187,52 @@ jobs:
       - name: Install second version (upgrade)
         uses: ./
         with:
-          version: v0.28.1
+          version: v0.31.5
 
       - name: Verify upgrade
         run: |
           VERSION=$(buildcache --version)
-          if [[ ! "$VERSION" =~ 0\.28\.1 ]]; then
+          if [[ ! "$VERSION" =~ 0\.31\.5 ]]; then
             echo "Error: Upgrade failed"
             exit 1
           fi
           echo "✅ Upgrade successful"
+
+  test-url-formats:
+    name: Test different URL formats
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - version: v0.31.5
+            format: "new (v0.31.4+)"
+          - version: v0.31.4
+            format: "new (v0.31.4+)"
+          - version: v0.31.3
+            format: "legacy (≤v0.31.3)"
+          - version: v0.30.0
+            format: "legacy (≤v0.31.3)"
+          - version: v0.28.5
+            format: "legacy (≤v0.31.3)"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test ${{ matrix.version }} (${{ matrix.format }} URL format)
+        uses: ./
+        with:
+          version: ${{ matrix.version }}
+
+      - name: Verify installation
+        run: |
+          VERSION=$(buildcache --version)
+          EXPECTED="${{ matrix.version }}"
+          EXPECTED_NUM="${EXPECTED#v}"
+          if [[ ! "$VERSION" =~ $EXPECTED_NUM ]]; then
+            echo "Error: Expected version $EXPECTED_NUM but got $VERSION"
+            exit 1
+          fi
+          echo "✅ ${{ matrix.version }} installed correctly using ${{ matrix.format }} URL format"
 
   test-api-availability:
     name: Test GitLab API availability
@@ -227,7 +264,7 @@ jobs:
 
   test-summary:
     name: Test Summary
-    needs: [test-latest-version, test-specific-version, test-invalid-version, test-installation-paths, test-multiple-installations, test-api-availability]
+    needs: [test-latest-version, test-specific-version, test-invalid-version, test-installation-paths, test-multiple-installations, test-url-formats, test-api-availability]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -238,6 +275,7 @@ jobs:
              [[ "${{ needs.test-invalid-version.result }}" != "success" ]] || \
              [[ "${{ needs.test-installation-paths.result }}" != "success" ]] || \
              [[ "${{ needs.test-multiple-installations.result }}" != "success" ]] || \
+             [[ "${{ needs.test-url-formats.result }}" != "success" ]] || \
              [[ "${{ needs.test-api-availability.result }}" != "success" ]]; then
             echo "❌ Some tests failed"
             exit 1
@@ -254,4 +292,5 @@ jobs:
           echo "| Invalid Version Handling | ${{ needs.test-invalid-version.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Installation Paths | ${{ needs.test-installation-paths.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Multiple Installations | ${{ needs.test-multiple-installations.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| URL Format Compatibility | ${{ needs.test-url-formats.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| API Availability | ${{ needs.test-api-availability.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY

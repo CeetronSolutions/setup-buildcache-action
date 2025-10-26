@@ -27,9 +27,10 @@ runs:
         else
           VERSION="${{ inputs.version }}"
           if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Version must be in format vX.Y.Z (e.g., v0.28.1)"
+            echo "Error: Version must be in format vX.Y.Z (e.g., v0.31.5)"
             exit 1
           fi
+          
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Using specified version: $VERSION"
         fi
@@ -41,7 +42,23 @@ runs:
         VERSION="${{ steps.version.outputs.version }}"
         echo "Installing buildcache $VERSION for Linux..."
         
-        DOWNLOAD_URL="https://gitlab.com/bits-n-bites/buildcache/-/releases/$VERSION/downloads/bin/buildcache-linux.tar.gz"
+        # Determine download URL based on version
+        # v0.31.4+ uses buildcache-linux-amd64.tar.gz
+        # v0.31.3 and earlier use buildcache-linux.tar.gz
+        VERSION_NUM=${VERSION#v}
+        MAJOR=$(echo $VERSION_NUM | cut -d. -f1)
+        MINOR=$(echo $VERSION_NUM | cut -d. -f2)
+        PATCH=$(echo $VERSION_NUM | cut -d. -f3)
+        
+        if [[ $MAJOR -gt 0 ]] || [[ $MAJOR -eq 0 && $MINOR -gt 31 ]] || [[ $MAJOR -eq 0 && $MINOR -eq 31 && $PATCH -ge 4 ]]; then
+          # v0.31.4 and later
+          DOWNLOAD_URL="https://gitlab.com/bits-n-bites/buildcache/-/releases/$VERSION/downloads/buildcache-linux-amd64.tar.gz"
+          echo "Using new URL format for $VERSION (v0.31.4+)"
+        else
+          # v0.31.3 and earlier (including all older versions)
+          DOWNLOAD_URL="https://gitlab.com/bits-n-bites/buildcache/-/releases/$VERSION/downloads/buildcache-linux.tar.gz"
+          echo "Using legacy URL format for $VERSION (≤v0.31.3)"
+        fi
         
         # Download with error handling
         if ! curl -L "$DOWNLOAD_URL" -o buildcache.tar.gz --fail; then
@@ -58,15 +75,15 @@ runs:
         fi
         
         # Verify extracted binary exists
-        if [ ! -f "buildcache/bin/buildcache" ]; then
+        if [ ! -f "buildcache" ]; then
           echo "Error: buildcache binary not found in extracted archive"
-          rm -rf buildcache buildcache.tar.gz
+          rm -rf buildcache* buildcache.tar.gz
           exit 1
         fi
         
         # Create directory and move binary
         sudo mkdir -p /usr/local/bin
-        sudo mv buildcache/bin/buildcache /usr/local/bin/
+        sudo mv buildcache /usr/local/bin/
         sudo chmod +x /usr/local/bin/buildcache
         
         # Verify installation
@@ -87,7 +104,7 @@ runs:
         $VERSION = "${{ steps.version.outputs.version }}"
         Write-Host "Installing buildcache $VERSION for Windows..."
         
-        $DOWNLOAD_URL = "https://gitlab.com/bits-n-bites/buildcache/-/releases/$VERSION/downloads/bin/buildcache-windows.zip"
+        $DOWNLOAD_URL = "https://gitlab.com/bits-n-bites/buildcache/-/releases/$VERSION/downloads/buildcache-windows.zip"
         
         # Download with error handling
         try {
@@ -108,9 +125,9 @@ runs:
         }
         
         # Verify extracted binary exists
-        if (-not (Test-Path "buildcache\bin\buildcache.exe")) {
+        if (-not (Test-Path "buildcache.exe")) {
           Write-Host "Error: buildcache.exe not found in extracted archive" -ForegroundColor Red
-          Remove-Item -Recurse -Force buildcache, buildcache.zip -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force buildcache*, buildcache.zip -ErrorAction SilentlyContinue
           exit 1
         }
         
@@ -122,7 +139,7 @@ runs:
             Remove-Item -Recurse -Force $InstallDir
           }
           New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
-          Move-Item -Path "buildcache\bin\buildcache.exe" -Destination "$InstallDir\buildcache.exe" -Force
+          Move-Item -Path "buildcache.exe" -Destination "$InstallDir\buildcache.exe" -Force
         } catch {
           Write-Host "Error: Failed to install buildcache to $InstallDir" -ForegroundColor Red
           exit 1
