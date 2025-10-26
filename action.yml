@@ -45,7 +45,14 @@ runs:
         # Install required dependencies
         echo "Installing required dependencies..."
         sudo apt-get update -qq
-        sudo apt-get install -y libssl1.1 || sudo apt-get install -y libssl3
+        # Install OpenSSL 1.1 libraries (buildcache requires libcrypto.so.1.1)
+        if ! sudo apt-get install -y libssl1.1; then
+          echo "libssl1.1 not available in default repos, adding focal repo for compatibility..."
+          echo "deb http://security.ubuntu.com/ubuntu focal-security main" | sudo tee /etc/apt/sources.list.d/focal-security.list
+          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3B4FE6ACC0B21F32
+          sudo apt-get update -qq
+          sudo apt-get install -y libssl1.1
+        fi
         
         # Determine download URL based on version
         # v0.31.4+ uses buildcache-linux-amd64.tar.gz
