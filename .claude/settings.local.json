@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"M:\\gitroot\\setup-buildcache-action\\test-basic.sh\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

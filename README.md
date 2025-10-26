@@ -173,6 +173,20 @@ Tests run automatically on:
 - Pull requests to `main` branch
 - Manual workflow dispatch
 
+#### Local Testing
+Run basic validation tests locally:
+```bash
+./test-basic.sh
+```
+
+This validates:
+- File structure and completeness
+- action.yml syntax and security checks
+- Version format validation logic
+- URL format detection logic
+- Test workflow structure
+- Documentation completeness
+
 #### Manual Testing
 Test the action manually in a workflow:
 ```yaml
@@ -195,9 +209,10 @@ View test results in the [Actions tab](../../actions/workflows/test.yml) of this
 
 When making changes to this action:
 
-1. Create a pull request
-2. Ensure all automated tests pass
-3. Test manually if needed using the manual test workflow above
+1. Run local validation: `./test-basic.sh`
+2. Create a pull request
+3. Ensure all automated tests pass
+4. Test manually if needed using the manual test workflow above
 
 ## License
 

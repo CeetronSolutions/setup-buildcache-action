@@ -117,7 +117,7 @@ runs:
         
         # Extract with error handling
         try {
-          Expand-Archive -Path buildcache.zip -DestinationPath buildcache -ErrorAction Stop
+          Expand-Archive -Path buildcache.zip -DestinationPath . -ErrorAction Stop
         } catch {
           Write-Host "Error: Failed to extract buildcache archive" -ForegroundColor Red
           Remove-Item -Force buildcache.zip -ErrorAction SilentlyContinue

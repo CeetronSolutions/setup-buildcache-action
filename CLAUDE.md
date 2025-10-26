@@ -58,10 +58,11 @@ The action intelligently handles different download URL formats based on buildca
 ## Development Workflow
 
 1. **Make changes** to action.yml or documentation
-2. **Push to GitHub** - triggers automated test suite
-3. **Review test results** in Actions tab
-4. **Manual testing** available via workflow dispatch
-5. **Create PR** when ready for review
+2. **Run local validation**: `./test-basic.sh`
+3. **Push to GitHub** - triggers automated test suite
+4. **Review test results** in Actions tab
+5. **Manual testing** available via workflow dispatch
+6. **Create PR** when ready for review
 
 ## Common Tasks
 
