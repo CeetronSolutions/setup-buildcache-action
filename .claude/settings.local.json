@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\"M:\\gitroot\\setup-buildcache-action\\test-basic.sh\")"
+      "Bash(\"M:\\gitroot\\setup-buildcache-action\\test-basic.sh\")",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []

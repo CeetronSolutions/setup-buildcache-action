@@ -166,18 +166,19 @@ else
 fi
 
 # Check Windows extraction logic
-if grep -q "Expand-Archive.*-DestinationPath \." action.yml; then
-    echo "✅ Windows extracts to current directory"
+if grep -q "Expand-Archive.*-DestinationPath buildcache" action.yml; then
+    echo "✅ Windows extracts to buildcache directory"
 else
     echo "❌ Windows extraction destination incorrect"
     exit 1
 fi
 
-# Check Windows binary path expectation
-if grep -q 'Test-Path "buildcache.exe"' action.yml; then
-    echo "✅ Windows expects buildcache.exe in current directory"
+# Check Windows binary path detection
+if grep -q 'Test-Path "buildcache\\buildcache.exe"' action.yml && \
+   grep -q 'Test-Path "buildcache\\bin\\buildcache.exe"' action.yml; then
+    echo "✅ Windows checks multiple binary locations"
 else
-    echo "❌ Windows binary path expectation incorrect"
+    echo "❌ Windows binary path detection insufficient"
     exit 1
 fi
 

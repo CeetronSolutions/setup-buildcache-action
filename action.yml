@@ -117,17 +117,24 @@ runs:
         
         # Extract with error handling
         try {
-          Expand-Archive -Path buildcache.zip -DestinationPath . -ErrorAction Stop
+          Expand-Archive -Path buildcache.zip -DestinationPath buildcache -ErrorAction Stop
         } catch {
           Write-Host "Error: Failed to extract buildcache archive" -ForegroundColor Red
           Remove-Item -Force buildcache.zip -ErrorAction SilentlyContinue
           exit 1
         }
         
-        # Verify extracted binary exists
-        if (-not (Test-Path "buildcache.exe")) {
+        # Verify extracted binary exists (check common locations)
+        $binaryPath = ""
+        if (Test-Path "buildcache\buildcache.exe") {
+          $binaryPath = "buildcache\buildcache.exe"
+        } elseif (Test-Path "buildcache\bin\buildcache.exe") {
+          $binaryPath = "buildcache\bin\buildcache.exe"
+        } else {
           Write-Host "Error: buildcache.exe not found in extracted archive" -ForegroundColor Red
-          Remove-Item -Recurse -Force buildcache*, buildcache.zip -ErrorAction SilentlyContinue
+          Write-Host "Checking archive contents..." -ForegroundColor Yellow
+          Get-ChildItem -Recurse buildcache | ForEach-Object { Write-Host $_.FullName }
+          Remove-Item -Recurse -Force buildcache, buildcache.zip -ErrorAction SilentlyContinue
           exit 1
         }
         
@@ -139,7 +146,7 @@ runs:
             Remove-Item -Recurse -Force $InstallDir
           }
           New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
-          Move-Item -Path "buildcache.exe" -Destination "$InstallDir\buildcache.exe" -Force
+          Move-Item -Path $binaryPath -Destination "$InstallDir\buildcache.exe" -Force
         } catch {
           Write-Host "Error: Failed to install buildcache to $InstallDir" -ForegroundColor Red
           exit 1
