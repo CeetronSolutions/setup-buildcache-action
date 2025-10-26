@@ -91,9 +91,10 @@ This ensures compatibility across all buildcache versions without manual interve
 - **Windows**: `%USERPROFILE%\.local\buildcache-{version}\` or `%USERPROFILE%\.local\buildcache-{version}\bin\` (added to PATH)
 
 The action extracts buildcache to a version-specific directory in the user's home folder and adds the appropriate binary directory to PATH. This approach:
-- Avoids requiring administrator privileges
+- Avoids requiring administrator privileges for binary installation
 - Supports multiple buildcache versions simultaneously  
 - Keeps installations isolated and manageable
+- Automatically installs required system dependencies (OpenSSL libraries on Linux)
 
 ## Using buildcache with CMake
 

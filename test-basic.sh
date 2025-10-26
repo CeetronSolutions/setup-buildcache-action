@@ -149,6 +149,14 @@ fi
 # Test 10: Validate archive extraction and PATH logic
 echo "📋 Test 10: Validating archive extraction and PATH logic..."
 
+# Check Linux dependency installation
+if grep -q "apt-get.*libssl" action.yml; then
+    echo "✅ Linux installs required dependencies"
+else
+    echo "❌ Linux dependency installation missing"
+    exit 1
+fi
+
 # Check Linux extraction to dedicated directory
 if grep -q "tar -xzf buildcache.tar.gz -C" action.yml; then
     echo "✅ Linux extracts to dedicated directory"

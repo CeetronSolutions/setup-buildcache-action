@@ -42,6 +42,11 @@ runs:
         VERSION="${{ steps.version.outputs.version }}"
         echo "Installing buildcache $VERSION for Linux..."
         
+        # Install required dependencies
+        echo "Installing required dependencies..."
+        sudo apt-get update -qq
+        sudo apt-get install -y libssl1.1 || sudo apt-get install -y libssl3
+        
         # Determine download URL based on version
         # v0.31.4+ uses buildcache-linux-amd64.tar.gz
         # v0.31.3 and earlier use buildcache-linux.tar.gz
