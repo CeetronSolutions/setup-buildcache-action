@@ -1,0 +1,151 @@
+name: 'Setup buildcache'
+description: 'Install buildcache and add it to PATH for Windows and Linux'
+author: 'Your Name'
+
+inputs:
+  version:
+    description: 'buildcache version to install (e.g., v0.28.1). If not specified, uses latest release.'
+    required: false
+    default: 'latest'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Determine buildcache version
+      id: version
+      shell: bash
+      run: |
+        if [ "${{ inputs.version }}" = "latest" ]; then
+          echo "Getting latest buildcache release..."
+          LATEST_VERSION=$(curl -s https://gitlab.com/api/v4/projects/bits-n-bites%2Fbuildcache/releases | jq -r '.[0].tag_name')
+          if [ "$LATEST_VERSION" = "null" ] || [ -z "$LATEST_VERSION" ]; then
+            echo "Error: Could not fetch latest version from GitLab API"
+            exit 1
+          fi
+          echo "version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+          echo "Latest version: $LATEST_VERSION"
+        else
+          VERSION="${{ inputs.version }}"
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Version must be in format vX.Y.Z (e.g., v0.28.1)"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Using specified version: $VERSION"
+        fi
+
+    - name: Install buildcache (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        echo "Installing buildcache $VERSION for Linux..."
+        
+        DOWNLOAD_URL="https://gitlab.com/bits-n-bites/buildcache/-/releases/$VERSION/downloads/bin/buildcache-linux.tar.gz"
+        
+        # Download with error handling
+        if ! curl -L "$DOWNLOAD_URL" -o buildcache.tar.gz --fail; then
+          echo "Error: Failed to download buildcache $VERSION. Please check if this version exists."
+          echo "Available releases: https://gitlab.com/bits-n-bites/buildcache/-/releases"
+          exit 1
+        fi
+        
+        # Extract with error handling
+        if ! tar -xzf buildcache.tar.gz; then
+          echo "Error: Failed to extract buildcache archive"
+          rm -f buildcache.tar.gz
+          exit 1
+        fi
+        
+        # Verify extracted binary exists
+        if [ ! -f "buildcache/bin/buildcache" ]; then
+          echo "Error: buildcache binary not found in extracted archive"
+          rm -rf buildcache buildcache.tar.gz
+          exit 1
+        fi
+        
+        # Create directory and move binary
+        sudo mkdir -p /usr/local/bin
+        sudo mv buildcache/bin/buildcache /usr/local/bin/
+        sudo chmod +x /usr/local/bin/buildcache
+        
+        # Verify installation
+        if ! buildcache --version; then
+          echo "Error: buildcache installation verification failed"
+          exit 1
+        fi
+        
+        echo "buildcache $VERSION installed successfully on Linux"
+        
+        # Cleanup
+        rm -rf buildcache buildcache.tar.gz
+
+    - name: Install buildcache (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $VERSION = "${{ steps.version.outputs.version }}"
+        Write-Host "Installing buildcache $VERSION for Windows..."
+        
+        $DOWNLOAD_URL = "https://gitlab.com/bits-n-bites/buildcache/-/releases/$VERSION/downloads/bin/buildcache-windows.zip"
+        
+        # Download with error handling
+        try {
+          Invoke-WebRequest -Uri $DOWNLOAD_URL -OutFile buildcache.zip -ErrorAction Stop
+        } catch {
+          Write-Host "Error: Failed to download buildcache $VERSION. Please check if this version exists." -ForegroundColor Red
+          Write-Host "Available releases: https://gitlab.com/bits-n-bites/buildcache/-/releases" -ForegroundColor Yellow
+          exit 1
+        }
+        
+        # Extract with error handling
+        try {
+          Expand-Archive -Path buildcache.zip -DestinationPath buildcache -ErrorAction Stop
+        } catch {
+          Write-Host "Error: Failed to extract buildcache archive" -ForegroundColor Red
+          Remove-Item -Force buildcache.zip -ErrorAction SilentlyContinue
+          exit 1
+        }
+        
+        # Verify extracted binary exists
+        if (-not (Test-Path "buildcache\bin\buildcache.exe")) {
+          Write-Host "Error: buildcache.exe not found in extracted archive" -ForegroundColor Red
+          Remove-Item -Recurse -Force buildcache, buildcache.zip -ErrorAction SilentlyContinue
+          exit 1
+        }
+        
+        # Create directory and move binary
+        $InstallDir = "C:\buildcache"
+        try {
+          if (Test-Path $InstallDir) {
+            Write-Host "Removing existing buildcache installation..."
+            Remove-Item -Recurse -Force $InstallDir
+          }
+          New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
+          Move-Item -Path "buildcache\bin\buildcache.exe" -Destination "$InstallDir\buildcache.exe" -Force
+        } catch {
+          Write-Host "Error: Failed to install buildcache to $InstallDir" -ForegroundColor Red
+          exit 1
+        }
+        
+        # Add to PATH for current session
+        echo "$InstallDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        
+        # Verify installation
+        try {
+          $versionOutput = & "$InstallDir\buildcache.exe" --version 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            throw "buildcache returned exit code $LASTEXITCODE"
+          }
+          Write-Host "buildcache $VERSION installed successfully on Windows"
+        } catch {
+          Write-Host "Error: buildcache installation verification failed" -ForegroundColor Red
+          exit 1
+        }
+        
+        # Cleanup
+        Remove-Item -Recurse -Force buildcache, buildcache.zip -ErrorAction SilentlyContinue
+
+branding:
+  icon: 'box'
+  color: 'blue'

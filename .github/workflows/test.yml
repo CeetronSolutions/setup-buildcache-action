@@ -1,0 +1,257 @@
+name: Test setup-buildcache-action
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-latest-version:
+    name: Test latest version installation
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test setup buildcache (latest)
+        uses: ./
+        id: setup-latest
+
+      - name: Verify buildcache is in PATH
+        shell: bash
+        run: |
+          if ! command -v buildcache &> /dev/null; then
+            echo "Error: buildcache not found in PATH"
+            exit 1
+          fi
+          echo "✅ buildcache found in PATH"
+
+      - name: Verify buildcache version
+        shell: bash
+        run: |
+          VERSION=$(buildcache --version)
+          echo "Installed version: $VERSION"
+          if [[ ! "$VERSION" =~ buildcache.*[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "Error: Invalid version format: $VERSION"
+            exit 1
+          fi
+          echo "✅ Version format is valid"
+
+      - name: Test buildcache basic functionality
+        shell: bash
+        run: |
+          buildcache -s  # Show statistics
+          buildcache -z  # Zero statistics
+          echo "✅ Basic buildcache commands work"
+
+  test-specific-version:
+    name: Test specific version installation
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        version: [v0.28.1, v0.27.6]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test setup buildcache (specific version)
+        uses: ./
+        with:
+          version: ${{ matrix.version }}
+
+      - name: Verify correct version installed
+        shell: bash
+        run: |
+          VERSION=$(buildcache --version)
+          echo "Installed version: $VERSION"
+          EXPECTED="${{ matrix.version }}"
+          # Remove 'v' prefix for comparison
+          EXPECTED_NUM="${EXPECTED#v}"
+          if [[ ! "$VERSION" =~ $EXPECTED_NUM ]]; then
+            echo "Error: Expected version $EXPECTED_NUM but got $VERSION"
+            exit 1
+          fi
+          echo "✅ Correct version $EXPECTED installed"
+
+  test-invalid-version:
+    name: Test invalid version handling
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test invalid version format (should fail)
+        uses: ./
+        id: invalid-format
+        continue-on-error: true
+        with:
+          version: "invalid-version"
+
+      - name: Verify action failed for invalid format
+        if: steps.invalid-format.outcome == 'success'
+        run: |
+          echo "Error: Action should have failed for invalid version format"
+          exit 1
+
+      - name: Test non-existent version (should fail)
+        uses: ./
+        id: non-existent
+        continue-on-error: true
+        with:
+          version: "v99.99.99"
+
+      - name: Verify action failed for non-existent version
+        if: steps.non-existent.outcome == 'success'
+        run: |
+          echo "Error: Action should have failed for non-existent version"
+          exit 1
+
+      - name: Confirm error handling works
+        run: echo "✅ Error handling works correctly"
+
+  test-installation-paths:
+    name: Test installation paths and cleanup
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup buildcache
+        uses: ./
+
+      - name: Check installation path (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          if [ ! -f "/usr/local/bin/buildcache" ]; then
+            echo "Error: buildcache not installed at /usr/local/bin/buildcache"
+            exit 1
+          fi
+          if [ ! -x "/usr/local/bin/buildcache" ]; then
+            echo "Error: buildcache not executable"
+            exit 1
+          fi
+          echo "✅ Linux installation path correct"
+
+      - name: Check installation path (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "C:\buildcache\buildcache.exe")) {
+            Write-Host "Error: buildcache not installed at C:\buildcache\buildcache.exe" -ForegroundColor Red
+            exit 1
+          }
+          Write-Host "✅ Windows installation path correct" -ForegroundColor Green
+
+      - name: Verify no temporary files left behind
+        shell: bash
+        run: |
+          # Check for leftover files
+          if ls buildcache* 2>/dev/null; then
+            echo "Error: Temporary files not cleaned up"
+            ls -la buildcache*
+            exit 1
+          fi
+          echo "✅ Cleanup successful, no temporary files found"
+
+  test-multiple-installations:
+    name: Test multiple installations (upgrade scenario)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install first version
+        uses: ./
+        with:
+          version: v0.27.6
+
+      - name: Verify first installation
+        run: |
+          VERSION=$(buildcache --version)
+          if [[ ! "$VERSION" =~ 0\.27\.6 ]]; then
+            echo "Error: First installation failed"
+            exit 1
+          fi
+          echo "✅ First version installed correctly"
+
+      - name: Install second version (upgrade)
+        uses: ./
+        with:
+          version: v0.28.1
+
+      - name: Verify upgrade
+        run: |
+          VERSION=$(buildcache --version)
+          if [[ ! "$VERSION" =~ 0\.28\.1 ]]; then
+            echo "Error: Upgrade failed"
+            exit 1
+          fi
+          echo "✅ Upgrade successful"
+
+  test-api-availability:
+    name: Test GitLab API availability
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test GitLab API response
+        run: |
+          # Test that we can reach the GitLab API
+          RESPONSE=$(curl -s https://gitlab.com/api/v4/projects/bits-n-bites%2Fbuildcache/releases)
+          if ! echo "$RESPONSE" | jq -e '.[0].tag_name' > /dev/null; then
+            echo "Error: GitLab API not returning expected format"
+            echo "Response: $RESPONSE"
+            exit 1
+          fi
+          echo "✅ GitLab API is accessible and returns valid data"
+
+      - name: Test with jq parsing (like our action does)
+        run: |
+          LATEST_VERSION=$(curl -s https://gitlab.com/api/v4/projects/bits-n-bites%2Fbuildcache/releases | jq -r '.[0].tag_name')
+          if [ "$LATEST_VERSION" = "null" ] || [ -z "$LATEST_VERSION" ]; then
+            echo "Error: Failed to parse latest version with jq"
+            exit 1
+          fi
+          echo "Latest version from API: $LATEST_VERSION"
+          echo "✅ jq parsing works correctly"
+
+  test-summary:
+    name: Test Summary
+    needs: [test-latest-version, test-specific-version, test-invalid-version, test-installation-paths, test-multiple-installations, test-api-availability]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all tests passed
+        run: |
+          if [[ "${{ needs.test-latest-version.result }}" != "success" ]] || \
+             [[ "${{ needs.test-specific-version.result }}" != "success" ]] || \
+             [[ "${{ needs.test-invalid-version.result }}" != "success" ]] || \
+             [[ "${{ needs.test-installation-paths.result }}" != "success" ]] || \
+             [[ "${{ needs.test-multiple-installations.result }}" != "success" ]] || \
+             [[ "${{ needs.test-api-availability.result }}" != "success" ]]; then
+            echo "❌ Some tests failed"
+            exit 1
+          fi
+          echo "✅ All tests passed successfully!"
+          
+      - name: Generate test report
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Latest Version Installation | ${{ needs.test-latest-version.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Specific Version Installation | ${{ needs.test-specific-version.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Invalid Version Handling | ${{ needs.test-invalid-version.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Installation Paths | ${{ needs.test-installation-paths.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Multiple Installations | ${{ needs.test-multiple-installations.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| API Availability | ${{ needs.test-api-availability.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY

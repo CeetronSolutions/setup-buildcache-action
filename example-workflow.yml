@@ -1,0 +1,69 @@
+name: Example Workflow with buildcache
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Install buildcache with latest version from external organization
+      - name: Setup buildcache
+        uses: CeetronSolutions/setup-buildcache-action@v1
+      
+      - name: Configure buildcache
+        run: |
+          buildcache -s  # Show statistics
+          buildcache -z  # Zero statistics
+      
+      - name: Build project
+        run: |
+          # Your build commands here
+          # buildcache will automatically wrap compiler calls
+          echo "Building with buildcache..."
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Install buildcache with specific version from external organization
+      - name: Setup buildcache
+        uses: CeetronSolutions/setup-buildcache-action@v1
+        with:
+          version: v0.28.1
+      
+      - name: Configure buildcache
+        shell: pwsh
+        run: |
+          buildcache -s  # Show statistics
+          buildcache -z  # Zero statistics
+      
+      - name: Build project
+        shell: pwsh
+        run: |
+          # Your build commands here
+          Write-Host "Building with buildcache..."
+
+  build-matrix:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup buildcache
+        uses: CeetronSolutions/setup-buildcache-action@v1
+        # Uses latest version by default
+      
+      - name: Verify buildcache
+        shell: bash
+        run: |
+          buildcache --version
+          buildcache -s
