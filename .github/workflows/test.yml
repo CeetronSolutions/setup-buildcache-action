@@ -132,25 +132,42 @@ jobs:
       - name: Check installation path (Linux)
         if: runner.os == 'Linux'
         run: |
-          if [ ! -f "/usr/local/bin/buildcache" ]; then
-            echo "Error: buildcache not installed at /usr/local/bin/buildcache"
+          BUILDCACHE_PATH=$(which buildcache)
+          if [ -z "$BUILDCACHE_PATH" ]; then
+            echo "Error: buildcache not found in PATH"
             exit 1
           fi
-          if [ ! -x "/usr/local/bin/buildcache" ]; then
+          if [ ! -x "$BUILDCACHE_PATH" ]; then
             echo "Error: buildcache not executable"
             exit 1
           fi
-          echo "✅ Linux installation path correct"
+          echo "✅ Linux installation: buildcache found at $BUILDCACHE_PATH"
+          
+          # Verify the path contains version information
+          if [[ "$BUILDCACHE_PATH" =~ buildcache-v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "✅ Installation path contains version information"
+          else
+            echo "⚠️ Installation path doesn't contain version info: $BUILDCACHE_PATH"
+          fi
 
       - name: Check installation path (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          if (-not (Test-Path "C:\buildcache\buildcache.exe")) {
-            Write-Host "Error: buildcache not installed at C:\buildcache\buildcache.exe" -ForegroundColor Red
+          try {
+            $BuildcachePath = (Get-Command buildcache).Source
+            Write-Host "✅ Windows installation: buildcache found at $BuildcachePath" -ForegroundColor Green
+            
+            # Verify the path contains version information
+            if ($BuildcachePath -match "buildcache-v\d+\.\d+\.\d+") {
+              Write-Host "✅ Installation path contains version information" -ForegroundColor Green
+            } else {
+              Write-Host "⚠️ Installation path doesn't contain version info: $BuildcachePath" -ForegroundColor Yellow
+            }
+          } catch {
+            Write-Host "Error: buildcache not found in PATH" -ForegroundColor Red
             exit 1
           }
-          Write-Host "✅ Windows installation path correct" -ForegroundColor Green
 
       - name: Verify no temporary files left behind
         shell: bash

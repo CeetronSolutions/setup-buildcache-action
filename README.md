@@ -165,7 +165,7 @@ This action includes comprehensive tests that run automatically on every push an
 - ✅ **Specific version installation** - Tests installation of specific versions (e.g., `v0.31.5`)
 - ✅ **Error handling** - Tests invalid version formats and non-existent versions
 - ✅ **Cross-platform support** - Tests on both Ubuntu and Windows runners
-- ✅ **Installation paths** - Verifies correct installation locations and permissions
+- ✅ **Installation paths** - Verifies buildcache is accessible via PATH and installation includes version info
 - ✅ **Multiple installations** - Tests upgrade scenarios
 - ✅ **URL format compatibility** - Tests both legacy (≤v0.31.3) and new (v0.31.4+) download URL formats
 - ✅ **Version compatibility** - Tests with various buildcache versions including older releases

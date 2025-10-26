@@ -116,7 +116,11 @@ runs:
           exit 1
         fi
         
-        echo "buildcache $VERSION installed successfully on Linux at $BINARY_PATH"
+        # Show where buildcache was installed
+        INSTALLED_PATH=$(which buildcache)
+        echo "buildcache $VERSION installed successfully on Linux"
+        echo "Binary location: $INSTALLED_PATH"
+        echo "Installation directory: $BINARY_PATH"
         
         # Cleanup downloaded archive
         rm -f buildcache.tar.gz
@@ -178,11 +182,16 @@ runs:
         
         # Verify installation
         try {
-          $versionOutput = & "$BinaryPath\buildcache.exe" --version 2>&1
+          $versionOutput = buildcache --version 2>&1
           if ($LASTEXITCODE -ne 0) {
             throw "buildcache returned exit code $LASTEXITCODE"
           }
-          Write-Host "buildcache $VERSION installed successfully on Windows at $BinaryPath"
+          
+          # Show where buildcache was installed
+          $InstalledPath = (Get-Command buildcache).Source
+          Write-Host "buildcache $VERSION installed successfully on Windows"
+          Write-Host "Binary location: $InstalledPath"
+          Write-Host "Installation directory: $BinaryPath"
         } catch {
           Write-Host "Error: buildcache installation verification failed" -ForegroundColor Red
           exit 1
