@@ -80,7 +80,9 @@ test_url_logic() {
     PATCH=$(echo $VERSION_NUM | cut -d. -f3)
     
     # Apply same logic as action.yml
-    if [[ $MAJOR -gt 0 ]] || [[ $MAJOR -eq 0 && $MINOR -gt 31 ]] || [[ $MAJOR -eq 0 && $MINOR -eq 31 && $PATCH -ge 4 ]]; then
+    if [[ $MAJOR -eq 0 && $MINOR -lt 30 ]]; then
+        actual_format="package_registry"
+    elif [[ $MAJOR -gt 0 ]] || [[ $MAJOR -eq 0 && $MINOR -gt 31 ]] || [[ $MAJOR -eq 0 && $MINOR -eq 31 && $PATCH -ge 4 ]]; then
         actual_format="new"
     else
         actual_format="legacy"
@@ -99,7 +101,7 @@ test_url_logic "v0.31.5" "new"
 test_url_logic "v0.31.4" "new"
 test_url_logic "v0.31.3" "legacy"
 test_url_logic "v0.30.0" "legacy"
-test_url_logic "v0.28.5" "legacy"
+test_url_logic "v0.28.5" "package_registry"
 test_url_logic "v1.0.0" "new"
 
 # Test 6: Check test workflow syntax

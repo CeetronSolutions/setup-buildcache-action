@@ -77,11 +77,13 @@ jobs:
 The action automatically handles different download URL formats based on the buildcache version:
 
 **Linux:**
-- **v0.31.4 and later**: Uses `buildcache-linux-amd64.tar.gz` format
-- **v0.31.3 and earlier**: Uses `buildcache-linux.tar.gz` format
+- **v0.31.4 and later**: Uses `buildcache-linux-amd64.tar.gz` format from releases downloads
+- **v0.30.0 to v0.31.3**: Uses `buildcache-linux.tar.gz` format from releases downloads
+- **v0.29.x and earlier**: Uses `buildcache-linux.tar.gz` format from GitLab package registry
 
 **Windows:**
-- **All versions**: Uses `buildcache-windows.zip` format
+- **v0.30.0 and later**: Uses `buildcache-windows.zip` format from releases downloads
+- **v0.29.x and earlier**: Uses `buildcache-windows.zip` format from GitLab package registry
 
 This ensures compatibility across all buildcache versions without manual intervention. If a specific version fails to download, the action will provide clear error messages with links to check available releases.
 

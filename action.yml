@@ -55,14 +55,18 @@ runs:
         MINOR=$(echo $VERSION_NUM | cut -d. -f2)
         PATCH=$(echo $VERSION_NUM | cut -d. -f3)
         
-        if [[ $MAJOR -gt 0 ]] || [[ $MAJOR -eq 0 && $MINOR -gt 31 ]] || [[ $MAJOR -eq 0 && $MINOR -eq 31 && $PATCH -ge 4 ]]; then
-          # v0.31.4 and later
+        if [[ $MAJOR -eq 0 && $MINOR -lt 30 ]]; then
+          # v0.29.x and earlier use GitLab package registry
+          DOWNLOAD_URL="https://gitlab.com/api/v4/projects/49153623/packages/generic/releases/$VERSION/buildcache-linux.tar.gz"
+          echo "Using package registry URL for $VERSION (≤v0.29.x)"
+        elif [[ $MAJOR -gt 0 ]] || [[ $MAJOR -eq 0 && $MINOR -gt 31 ]] || [[ $MAJOR -eq 0 && $MINOR -eq 31 && $PATCH -ge 4 ]]; then
+          # v0.31.4+ uses buildcache-linux-amd64.tar.gz
           DOWNLOAD_URL="https://gitlab.com/bits-n-bites/buildcache/-/releases/$VERSION/downloads/buildcache-linux-amd64.tar.gz"
           echo "Using new URL format for $VERSION (v0.31.4+)"
         else
-          # v0.31.3 and earlier (including all older versions)
+          # v0.30.0 to v0.31.3 use buildcache-linux.tar.gz
           DOWNLOAD_URL="https://gitlab.com/bits-n-bites/buildcache/-/releases/$VERSION/downloads/buildcache-linux.tar.gz"
-          echo "Using legacy URL format for $VERSION (≤v0.31.3)"
+          echo "Using legacy URL format for $VERSION (v0.30.0-v0.31.3)"
         fi
         
         # Download with error handling
@@ -132,7 +136,22 @@ runs:
         $VERSION = "${{ steps.version.outputs.version }}"
         Write-Host "Installing buildcache $VERSION for Windows..."
         
-        $DOWNLOAD_URL = "https://gitlab.com/bits-n-bites/buildcache/-/releases/$VERSION/downloads/buildcache-windows.zip"
+        # Determine download URL based on version
+        $VERSION_NUM = $VERSION -replace '^v', ''
+        $VERSION_PARTS = $VERSION_NUM -split '\.'
+        $MAJOR = [int]$VERSION_PARTS[0]
+        $MINOR = [int]$VERSION_PARTS[1]
+        $PATCH = [int]$VERSION_PARTS[2]
+        
+        if ($MAJOR -eq 0 -and $MINOR -lt 30) {
+          # v0.29.x and earlier use GitLab package registry
+          $DOWNLOAD_URL = "https://gitlab.com/api/v4/projects/49153623/packages/generic/releases/$VERSION/buildcache-windows.zip"
+          Write-Host "Using package registry URL for $VERSION (≤v0.29.x)"
+        } else {
+          # v0.30.0+ use releases downloads
+          $DOWNLOAD_URL = "https://gitlab.com/bits-n-bites/buildcache/-/releases/$VERSION/downloads/buildcache-windows.zip"
+          Write-Host "Using releases URL for $VERSION (v0.30.0+)"
+        }
         
         # Download with error handling
         try {

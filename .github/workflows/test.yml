@@ -230,7 +230,7 @@ jobs:
           - version: v0.30.0
             format: "legacy (≤v0.31.3)"
           - version: v0.28.5
-            format: "legacy (≤v0.31.3)"
+            format: "package registry (≤v0.29.x)"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
