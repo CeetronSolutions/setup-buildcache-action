@@ -183,14 +183,20 @@ else
     exit 1
 fi
 
-# Check binary detection for both platforms
-if grep -q 'INSTALL_DIR/buildcache' action.yml && \
-   grep -q 'INSTALL_DIR/bin/buildcache' action.yml && \
-   grep -q 'InstallDir\\buildcache.exe' action.yml && \
-   grep -q 'InstallDir\\bin\\buildcache.exe' action.yml; then
-    echo "✅ Both platforms check multiple binary locations"
+# Check flexible binary detection for both platforms
+if grep -q 'find.*buildcache.*executable' action.yml && \
+   grep -q 'Get-ChildItem.*buildcache.exe' action.yml; then
+    echo "✅ Both platforms use flexible binary detection"
 else
-    echo "❌ Binary location detection insufficient"
+    echo "❌ Flexible binary detection missing"
+    exit 1
+fi
+
+# Check for debugging output
+if grep -q "Extracted archive contents" action.yml; then
+    echo "✅ Both platforms have debugging output"
+else
+    echo "❌ Debugging output missing"
     exit 1
 fi
 
@@ -211,7 +217,8 @@ echo "   - File structure and completeness"
 echo "   - action.yml syntax and security"
 echo "   - Version format validation logic"
 echo "   - URL format detection logic"
-echo "   - Archive extraction logic validation"
+echo "   - Flexible binary detection and PATH setup"
+echo "   - Archive extraction with debugging output"
 echo "   - Test workflow structure"
 echo "   - Documentation completeness"
 echo ""

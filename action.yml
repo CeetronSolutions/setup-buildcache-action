@@ -79,20 +79,24 @@ runs:
           exit 1
         fi
         
-        # Find the buildcache binary in extracted directory
-        BINARY_PATH=""
-        if [ -f "$INSTALL_DIR/buildcache" ]; then
-          BINARY_PATH="$INSTALL_DIR"
-        elif [ -f "$INSTALL_DIR/bin/buildcache" ]; then
-          BINARY_PATH="$INSTALL_DIR/bin"
-        else
+        # Debug: Show extracted contents
+        echo "Extracted archive contents:"
+        find "$INSTALL_DIR" -type f | head -20
+        
+        # Find the buildcache binary recursively
+        BINARY_FILE=$(find "$INSTALL_DIR" -name "buildcache" -type f -executable | head -1)
+        if [ -z "$BINARY_FILE" ]; then
           echo "Error: buildcache binary not found in extracted archive"
-          echo "Contents of extracted directory:"
-          find "$INSTALL_DIR" -type f -name "*buildcache*" || echo "No buildcache files found"
+          echo "All files in extracted directory:"
+          find "$INSTALL_DIR" -type f
           rm -f buildcache.tar.gz
           rm -rf "$INSTALL_DIR"
           exit 1
         fi
+        
+        # Get the directory containing the binary
+        BINARY_PATH=$(dirname "$BINARY_FILE")
+        echo "Found buildcache binary at: $BINARY_FILE"
         
         # Make binary executable
         chmod +x "$BINARY_PATH/buildcache"
@@ -144,20 +148,24 @@ runs:
           exit 1
         }
         
-        # Find the buildcache binary in extracted directory
-        $BinaryPath = ""
-        if (Test-Path "$InstallDir\buildcache.exe") {
-          $BinaryPath = $InstallDir
-        } elseif (Test-Path "$InstallDir\bin\buildcache.exe") {
-          $BinaryPath = "$InstallDir\bin"
-        } else {
+        # Debug: Show extracted contents
+        Write-Host "Extracted archive contents:"
+        Get-ChildItem -Recurse $InstallDir | Select-Object -First 20 | ForEach-Object { Write-Host $_.FullName }
+        
+        # Find the buildcache binary recursively
+        $BinaryFile = Get-ChildItem -Recurse $InstallDir -Name "buildcache.exe" | Select-Object -First 1
+        if (-not $BinaryFile) {
           Write-Host "Error: buildcache.exe not found in extracted archive" -ForegroundColor Red
-          Write-Host "Contents of extracted directory:" -ForegroundColor Yellow
-          Get-ChildItem -Recurse $InstallDir -Name "*buildcache*" | ForEach-Object { Write-Host $_ }
+          Write-Host "All files in extracted directory:" -ForegroundColor Yellow
+          Get-ChildItem -Recurse $InstallDir | ForEach-Object { Write-Host $_.FullName }
           Remove-Item -Force buildcache.zip -ErrorAction SilentlyContinue
           Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue
           exit 1
         }
+        
+        # Get the directory containing the binary
+        $BinaryPath = Split-Path -Parent (Join-Path $InstallDir $BinaryFile)
+        Write-Host "Found buildcache binary at: $(Join-Path $InstallDir $BinaryFile)"
         
         # Add to PATH for current session and future steps
         echo $BinaryPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
