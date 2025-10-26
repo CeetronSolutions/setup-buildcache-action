@@ -146,48 +146,60 @@ else
     exit 1
 fi
 
-# Test 10: Validate archive extraction logic
-echo "📋 Test 10: Validating archive extraction logic..."
+# Test 10: Validate archive extraction and PATH logic
+echo "📋 Test 10: Validating archive extraction and PATH logic..."
 
-# Check Linux extraction logic
-if grep -q "tar -xzf buildcache.tar.gz" action.yml; then
-    echo "✅ Linux uses correct tar extraction command"
+# Check Linux extraction to dedicated directory
+if grep -q "tar -xzf buildcache.tar.gz -C" action.yml; then
+    echo "✅ Linux extracts to dedicated directory"
 else
-    echo "❌ Linux tar extraction command not found"
+    echo "❌ Linux extraction command incorrect"
     exit 1
 fi
 
-# Check Linux binary path expectation
-if grep -q 'if \[ ! -f "buildcache" \]' action.yml; then
-    echo "✅ Linux expects buildcache binary in current directory"
+# Check Linux PATH setup
+if grep -q 'echo.*GITHUB_PATH' action.yml && \
+   grep -q 'export PATH.*BINARY_PATH' action.yml; then
+    echo "✅ Linux sets up PATH correctly"
 else
-    echo "❌ Linux binary path expectation incorrect"
+    echo "❌ Linux PATH setup missing"
     exit 1
 fi
 
-# Check Windows extraction logic
-if grep -q "Expand-Archive.*-DestinationPath buildcache" action.yml; then
-    echo "✅ Windows extracts to buildcache directory"
+# Check Windows extraction to dedicated directory
+if grep -q "Expand-Archive.*-DestinationPath.*InstallDir" action.yml; then
+    echo "✅ Windows extracts to dedicated directory"
 else
     echo "❌ Windows extraction destination incorrect"
     exit 1
 fi
 
-# Check Windows binary path detection
-if grep -q 'Test-Path "buildcache\\buildcache.exe"' action.yml && \
-   grep -q 'Test-Path "buildcache\\bin\\buildcache.exe"' action.yml; then
-    echo "✅ Windows checks multiple binary locations"
+# Check Windows PATH setup
+if grep -q 'Out-File.*GITHUB_PATH' action.yml && \
+   grep -q 'env:PATH.*BinaryPath' action.yml; then
+    echo "✅ Windows sets up PATH correctly"
 else
-    echo "❌ Windows binary path detection insufficient"
+    echo "❌ Windows PATH setup missing"
     exit 1
 fi
 
-# Check for proper cleanup
-if grep -q "rm -rf.*buildcache.*buildcache.tar.gz" action.yml && \
-   grep -q "Remove-Item.*buildcache.*buildcache.zip" action.yml; then
-    echo "✅ Both platforms have proper cleanup logic"
+# Check binary detection for both platforms
+if grep -q 'INSTALL_DIR/buildcache' action.yml && \
+   grep -q 'INSTALL_DIR/bin/buildcache' action.yml && \
+   grep -q 'InstallDir\\buildcache.exe' action.yml && \
+   grep -q 'InstallDir\\bin\\buildcache.exe' action.yml; then
+    echo "✅ Both platforms check multiple binary locations"
 else
-    echo "❌ Missing proper cleanup logic"
+    echo "❌ Binary location detection insufficient"
+    exit 1
+fi
+
+# Check no file copying (should not have mv/Move-Item to system locations)
+if ! grep -q "sudo mv.*buildcache.*/usr/local/bin" action.yml && \
+   ! grep -q "Move-Item.*buildcache.*C:" action.yml; then
+    echo "✅ No file copying to system locations"
+else
+    echo "❌ Still copying files to system locations"
     exit 1
 fi
 

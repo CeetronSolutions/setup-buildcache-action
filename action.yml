@@ -67,24 +67,39 @@ runs:
           exit 1
         fi
         
+        # Create installation directory
+        INSTALL_DIR="$HOME/.local/buildcache-$VERSION"
+        mkdir -p "$INSTALL_DIR"
+        
         # Extract with error handling
-        if ! tar -xzf buildcache.tar.gz; then
+        if ! tar -xzf buildcache.tar.gz -C "$INSTALL_DIR"; then
           echo "Error: Failed to extract buildcache archive"
           rm -f buildcache.tar.gz
+          rm -rf "$INSTALL_DIR"
           exit 1
         fi
         
-        # Verify extracted binary exists
-        if [ ! -f "buildcache" ]; then
+        # Find the buildcache binary in extracted directory
+        BINARY_PATH=""
+        if [ -f "$INSTALL_DIR/buildcache" ]; then
+          BINARY_PATH="$INSTALL_DIR"
+        elif [ -f "$INSTALL_DIR/bin/buildcache" ]; then
+          BINARY_PATH="$INSTALL_DIR/bin"
+        else
           echo "Error: buildcache binary not found in extracted archive"
-          rm -rf buildcache* buildcache.tar.gz
+          echo "Contents of extracted directory:"
+          find "$INSTALL_DIR" -type f -name "*buildcache*" || echo "No buildcache files found"
+          rm -f buildcache.tar.gz
+          rm -rf "$INSTALL_DIR"
           exit 1
         fi
         
-        # Create directory and move binary
-        sudo mkdir -p /usr/local/bin
-        sudo mv buildcache /usr/local/bin/
-        sudo chmod +x /usr/local/bin/buildcache
+        # Make binary executable
+        chmod +x "$BINARY_PATH/buildcache"
+        
+        # Add to PATH for current session and future steps
+        echo "$BINARY_PATH" >> $GITHUB_PATH
+        export PATH="$BINARY_PATH:$PATH"
         
         # Verify installation
         if ! buildcache --version; then
@@ -92,10 +107,10 @@ runs:
           exit 1
         fi
         
-        echo "buildcache $VERSION installed successfully on Linux"
+        echo "buildcache $VERSION installed successfully on Linux at $BINARY_PATH"
         
-        # Cleanup
-        rm -rf buildcache buildcache.tar.gz
+        # Cleanup downloaded archive
+        rm -f buildcache.tar.gz
 
     - name: Install buildcache (Windows)
       if: runner.os == 'Windows'
@@ -115,60 +130,53 @@ runs:
           exit 1
         }
         
+        # Create installation directory
+        $InstallDir = "$env:USERPROFILE\.local\buildcache-$VERSION"
+        New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
+        
         # Extract with error handling
         try {
-          Expand-Archive -Path buildcache.zip -DestinationPath buildcache -ErrorAction Stop
+          Expand-Archive -Path buildcache.zip -DestinationPath $InstallDir -ErrorAction Stop
         } catch {
           Write-Host "Error: Failed to extract buildcache archive" -ForegroundColor Red
           Remove-Item -Force buildcache.zip -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue
           exit 1
         }
         
-        # Verify extracted binary exists (check common locations)
-        $binaryPath = ""
-        if (Test-Path "buildcache\buildcache.exe") {
-          $binaryPath = "buildcache\buildcache.exe"
-        } elseif (Test-Path "buildcache\bin\buildcache.exe") {
-          $binaryPath = "buildcache\bin\buildcache.exe"
+        # Find the buildcache binary in extracted directory
+        $BinaryPath = ""
+        if (Test-Path "$InstallDir\buildcache.exe") {
+          $BinaryPath = $InstallDir
+        } elseif (Test-Path "$InstallDir\bin\buildcache.exe") {
+          $BinaryPath = "$InstallDir\bin"
         } else {
           Write-Host "Error: buildcache.exe not found in extracted archive" -ForegroundColor Red
-          Write-Host "Checking archive contents..." -ForegroundColor Yellow
-          Get-ChildItem -Recurse buildcache | ForEach-Object { Write-Host $_.FullName }
-          Remove-Item -Recurse -Force buildcache, buildcache.zip -ErrorAction SilentlyContinue
+          Write-Host "Contents of extracted directory:" -ForegroundColor Yellow
+          Get-ChildItem -Recurse $InstallDir -Name "*buildcache*" | ForEach-Object { Write-Host $_ }
+          Remove-Item -Force buildcache.zip -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force $InstallDir -ErrorAction SilentlyContinue
           exit 1
         }
         
-        # Create directory and move binary
-        $InstallDir = "C:\buildcache"
-        try {
-          if (Test-Path $InstallDir) {
-            Write-Host "Removing existing buildcache installation..."
-            Remove-Item -Recurse -Force $InstallDir
-          }
-          New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
-          Move-Item -Path $binaryPath -Destination "$InstallDir\buildcache.exe" -Force
-        } catch {
-          Write-Host "Error: Failed to install buildcache to $InstallDir" -ForegroundColor Red
-          exit 1
-        }
-        
-        # Add to PATH for current session
-        echo "$InstallDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        # Add to PATH for current session and future steps
+        echo $BinaryPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        $env:PATH = "$BinaryPath;$env:PATH"
         
         # Verify installation
         try {
-          $versionOutput = & "$InstallDir\buildcache.exe" --version 2>&1
+          $versionOutput = & "$BinaryPath\buildcache.exe" --version 2>&1
           if ($LASTEXITCODE -ne 0) {
             throw "buildcache returned exit code $LASTEXITCODE"
           }
-          Write-Host "buildcache $VERSION installed successfully on Windows"
+          Write-Host "buildcache $VERSION installed successfully on Windows at $BinaryPath"
         } catch {
           Write-Host "Error: buildcache installation verification failed" -ForegroundColor Red
           exit 1
         }
         
-        # Cleanup
-        Remove-Item -Recurse -Force buildcache, buildcache.zip -ErrorAction SilentlyContinue
+        # Cleanup downloaded archive
+        Remove-Item -Force buildcache.zip -ErrorAction SilentlyContinue
 
 branding:
   icon: 'box'

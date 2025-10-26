@@ -87,8 +87,13 @@ This ensures compatibility across all buildcache versions without manual interve
 
 ## Installation Location
 
-- **Linux**: `/usr/local/bin/buildcache`
-- **Windows**: `C:\buildcache\buildcache.exe` (added to PATH)
+- **Linux**: `$HOME/.local/buildcache-{version}/` or `$HOME/.local/buildcache-{version}/bin/` (added to PATH)
+- **Windows**: `%USERPROFILE%\.local\buildcache-{version}\` or `%USERPROFILE%\.local\buildcache-{version}\bin\` (added to PATH)
+
+The action extracts buildcache to a version-specific directory in the user's home folder and adds the appropriate binary directory to PATH. This approach:
+- Avoids requiring administrator privileges
+- Supports multiple buildcache versions simultaneously  
+- Keeps installations isolated and manageable
 
 ## Using buildcache with CMake
 
