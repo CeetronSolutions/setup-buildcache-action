@@ -5,10 +5,28 @@ This is a GitHub Action that installs [buildcache](https://gitlab.com/bits-n-bit
 ## Project Overview
 
 **Purpose**: Automated installation of buildcache (a compilation caching tool) in GitHub Actions workflows
-**Platforms**: Linux (Ubuntu) and Windows
+**Platforms**: Linux (Ubuntu, Debian, RHEL, CentOS, Rocky Linux, AlmaLinux, Fedora) and Windows
 **Language**: GitHub Actions YAML with Bash and PowerShell scripts
 
 ## Key Architecture
+
+### Multi-Distribution Linux Support
+The action automatically detects the Linux distribution and uses the appropriate package manager:
+
+**Distribution Detection:**
+- Uses `/etc/os-release` to identify the distribution
+- Falls back to Debian-based behavior if detection fails
+
+**Package Management:**
+- **Debian-based** (Ubuntu, Debian): Uses `apt-get` to install `libssl1.1`
+- **RHEL-based** (RHEL 8, CentOS 8, Rocky Linux 8, AlmaLinux 8): Uses `dnf`/`yum` to install `openssl-libs` and `compat-openssl11`
+- **Fedora**: Uses `dnf` to install `openssl-libs`
+- **Unsupported**: Continues without dependency installation with a warning
+
+**OpenSSL Requirements:**
+- buildcache requires OpenSSL 1.1 libraries (libcrypto.so.1.1)
+- Ubuntu 24.04+ requires adding focal repository for libssl1.1
+- RHEL 8 requires `compat-openssl11` package from PowerTools/CodeReady repository
 
 ### Download URL Handling
 The action intelligently handles different download URL formats based on buildcache version:

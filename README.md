@@ -159,9 +159,22 @@ buildcache version 0.28.1
 
 If you specify a version that doesn't exist, the action will fail. Check the [releases page](https://gitlab.com/bits-n-bites/buildcache/-/releases) for available versions.
 
+### OpenSSL libraries on RHEL 8
+
+On RHEL 8 systems, buildcache requires OpenSSL 1.1 compatibility libraries. The action will automatically attempt to install `compat-openssl11`. If this fails, you may need to enable the PowerTools (RHEL 8) or CodeReady Builder (CentOS 8) repository:
+
+```bash
+# RHEL 8
+sudo subscription-manager repos --enable codeready-builder-for-rhel-8-$(arch)-rpms
+
+# CentOS 8 / Rocky Linux 8 / AlmaLinux 8
+sudo dnf config-manager --set-enabled powertools  # CentOS 8
+sudo dnf config-manager --set-enabled PowerTools  # Rocky/Alma Linux 8
+```
+
 ### Permission errors on Linux
 
-The action uses `sudo` to install buildcache to `/usr/local/bin` on Linux. This should work on GitHub-hosted runners by default.
+The action uses `sudo` to install dependencies on Linux. This should work on GitHub-hosted runners by default.
 
 ## Testing
 
