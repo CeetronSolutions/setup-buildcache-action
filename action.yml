@@ -83,11 +83,14 @@ runs:
             
             # For RHEL 8, we may need compat-openssl11 package for older buildcache versions
             # Check if OpenSSL 1.1 libraries are available
-            if ! find /usr/lib* /lib* -name 'libcrypto.so.1.1' 2>/dev/null | grep -q .; then
+            if ! find /usr/lib /usr/lib64 /lib /lib64 -name 'libcrypto.so.1.1' 2>/dev/null | grep -q .; then
               echo "OpenSSL 1.1 not found, trying to install compat-openssl11..."
               if ! sudo $PKG_MGR install -y compat-openssl11; then
                 echo "Warning: compat-openssl11 not available. Buildcache may require OpenSSL 1.1 compatibility libraries."
-                echo "You may need to enable PowerTools/CodeReady repository or install OpenSSL 1.1 manually."
+                echo "Enable the appropriate repository:"
+                echo "  RHEL 8: sudo subscription-manager repos --enable codeready-builder-for-rhel-8-\$(arch)-rpms"
+                echo "  CentOS 8: sudo dnf config-manager --set-enabled powertools"
+                echo "  Rocky/AlmaLinux 8: sudo dnf config-manager --set-enabled PowerTools"
               fi
             fi
             ;;
