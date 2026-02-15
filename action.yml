@@ -82,7 +82,8 @@ runs:
             sudo $PKG_MGR install -y openssl-libs || true
             
             # For RHEL 8, we may need compat-openssl11 package for older buildcache versions
-            if ! ldconfig -p | grep -q libcrypto.so.1.1; then
+            # Check if OpenSSL 1.1 libraries are available
+            if ! find /usr/lib* /lib* -name 'libcrypto.so.1.1' 2>/dev/null | grep -q .; then
               echo "OpenSSL 1.1 not found, trying to install compat-openssl11..."
               if ! sudo $PKG_MGR install -y compat-openssl11; then
                 echo "Warning: compat-openssl11 not available. Buildcache may require OpenSSL 1.1 compatibility libraries."
