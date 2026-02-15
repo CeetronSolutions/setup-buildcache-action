@@ -39,14 +39,15 @@ runs:
       if: runner.os == 'Linux'
       shell: bash
       run: |
-        VERSION="${{ steps.version.outputs.version }}"
-        echo "Installing buildcache $VERSION for Linux..."
+        BUILDCACHE_VERSION="${{ steps.version.outputs.version }}"
+        echo "Installing buildcache $BUILDCACHE_VERSION for Linux..."
         
         # Detect Linux distribution
         if [ -f /etc/os-release ]; then
           . /etc/os-release
           DISTRO_ID=$ID
-          echo "Detected Linux distribution: $NAME ($DISTRO_ID)"
+          DISTRO_NAME=$NAME
+          echo "Detected Linux distribution: $DISTRO_NAME ($DISTRO_ID)"
         else
           echo "Warning: Cannot detect distribution, assuming Debian-based"
           DISTRO_ID="debian"
@@ -102,34 +103,34 @@ runs:
         # Determine download URL based on version
         # v0.31.4+ uses buildcache-linux-amd64.tar.gz
         # v0.31.3 and earlier use buildcache-linux.tar.gz
-        VERSION_NUM=${VERSION#v}
+        VERSION_NUM=${BUILDCACHE_VERSION#v}
         MAJOR=$(echo $VERSION_NUM | cut -d. -f1)
         MINOR=$(echo $VERSION_NUM | cut -d. -f2)
         PATCH=$(echo $VERSION_NUM | cut -d. -f3)
         
         if [[ $MAJOR -eq 0 && $MINOR -lt 30 ]]; then
           # v0.29.x and earlier use GitLab package registry
-          DOWNLOAD_URL="https://gitlab.com/api/v4/projects/49153623/packages/generic/releases/$VERSION/buildcache-linux.tar.gz"
-          echo "Using package registry URL for $VERSION (≤v0.29.x)"
+          DOWNLOAD_URL="https://gitlab.com/api/v4/projects/49153623/packages/generic/releases/$BUILDCACHE_VERSION/buildcache-linux.tar.gz"
+          echo "Using package registry URL for $BUILDCACHE_VERSION (≤v0.29.x)"
         elif [[ $MAJOR -gt 0 ]] || [[ $MAJOR -eq 0 && $MINOR -gt 31 ]] || [[ $MAJOR -eq 0 && $MINOR -eq 31 && $PATCH -ge 4 ]]; then
           # v0.31.4+ uses buildcache-linux-amd64.tar.gz
-          DOWNLOAD_URL="https://gitlab.com/bits-n-bites/buildcache/-/releases/$VERSION/downloads/buildcache-linux-amd64.tar.gz"
-          echo "Using new URL format for $VERSION (v0.31.4+)"
+          DOWNLOAD_URL="https://gitlab.com/bits-n-bites/buildcache/-/releases/$BUILDCACHE_VERSION/downloads/buildcache-linux-amd64.tar.gz"
+          echo "Using new URL format for $BUILDCACHE_VERSION (v0.31.4+)"
         else
           # v0.30.0 to v0.31.3 use buildcache-linux.tar.gz
-          DOWNLOAD_URL="https://gitlab.com/bits-n-bites/buildcache/-/releases/$VERSION/downloads/buildcache-linux.tar.gz"
-          echo "Using legacy URL format for $VERSION (v0.30.0-v0.31.3)"
+          DOWNLOAD_URL="https://gitlab.com/bits-n-bites/buildcache/-/releases/$BUILDCACHE_VERSION/downloads/buildcache-linux.tar.gz"
+          echo "Using legacy URL format for $BUILDCACHE_VERSION (v0.30.0-v0.31.3)"
         fi
         
         # Download with error handling
         if ! curl -L "$DOWNLOAD_URL" -o buildcache.tar.gz --fail; then
-          echo "Error: Failed to download buildcache $VERSION. Please check if this version exists."
+          echo "Error: Failed to download buildcache $BUILDCACHE_VERSION. Please check if this version exists."
           echo "Available releases: https://gitlab.com/bits-n-bites/buildcache/-/releases"
           exit 1
         fi
         
         # Create installation directory
-        INSTALL_DIR="$HOME/.local/buildcache-$VERSION"
+        INSTALL_DIR="$HOME/.local/buildcache-$BUILDCACHE_VERSION"
         mkdir -p "$INSTALL_DIR"
         
         # Extract with error handling
@@ -174,7 +175,7 @@ runs:
         
         # Show where buildcache was installed
         INSTALLED_PATH=$(which buildcache)
-        echo "buildcache $VERSION installed successfully on Linux"
+        echo "buildcache $BUILDCACHE_VERSION installed successfully on Linux"
         echo "Binary location: $INSTALLED_PATH"
         echo "Installation directory: $BINARY_PATH"
         
