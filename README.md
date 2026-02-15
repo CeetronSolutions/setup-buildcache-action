@@ -5,6 +5,7 @@ This GitHub Action installs [buildcache](https://gitlab.com/bits-n-bites/buildca
 ## Features
 
 - 🚀 Supports both Linux and Windows runners
+- 🐧 Multi-distro Linux support (Ubuntu, Debian, RHEL, CentOS, Rocky Linux, AlmaLinux, Fedora)
 - 🔧 Optional version specification (uses latest by default)
 - ✅ Automatically adds buildcache to PATH
 - 🧹 Cleans up temporary files after installation
@@ -69,8 +70,13 @@ jobs:
 
 ## Supported Platforms
 
-- ✅ Linux (ubuntu-latest, ubuntu-22.04, ubuntu-20.04)
+- ✅ Linux (ubuntu-latest, ubuntu-22.04, ubuntu-20.04, RHEL 8, CentOS 8, Rocky Linux 8, AlmaLinux 8)
 - ✅ Windows (windows-latest, windows-2022, windows-2019)
+
+The action automatically detects the Linux distribution and uses the appropriate package manager:
+- **Debian-based systems** (Ubuntu, Debian): Uses `apt-get` to install `libssl1.1`
+- **RHEL-based systems** (RHEL, CentOS, Rocky Linux, AlmaLinux): Uses `dnf`/`yum` to install `openssl-libs` and `compat-openssl11` if needed
+- **Fedora**: Uses `dnf` to install `openssl-libs`
 
 ## Download URL Compatibility
 
