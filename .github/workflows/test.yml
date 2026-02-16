@@ -279,9 +279,52 @@ jobs:
           echo "Latest version from API: $LATEST_VERSION"
           echo "✅ jq parsing works correctly"
 
+  test-rhel8:
+    name: Test RHEL8 compatibility
+    runs-on: ubuntu-latest
+    container:
+      image: rockylinux:8
+    steps:
+      - name: Install required tools
+        run: |
+          dnf install -y git curl jq tar gzip findutils which
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Test setup buildcache on RHEL8
+        uses: ./
+
+      - name: Verify buildcache is in PATH
+        shell: bash
+        run: |
+          if ! command -v buildcache &> /dev/null; then
+            echo "Error: buildcache not found in PATH"
+            exit 1
+          fi
+          echo "buildcache found in PATH"
+
+      - name: Verify buildcache version
+        shell: bash
+        run: |
+          VERSION=$(buildcache --version)
+          echo "Installed version: $VERSION"
+          if [[ ! "$VERSION" =~ BuildCache.*version.*[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "Error: Invalid version format: $VERSION"
+            exit 1
+          fi
+          echo "Version format is valid"
+
+      - name: Test buildcache basic functionality
+        shell: bash
+        run: |
+          buildcache -s
+          buildcache -z
+          echo "Basic buildcache commands work on RHEL8"
+
   test-summary:
     name: Test Summary
-    needs: [test-latest-version, test-specific-version, test-invalid-version, test-installation-paths, test-multiple-installations, test-url-formats, test-api-availability]
+    needs: [test-latest-version, test-specific-version, test-invalid-version, test-installation-paths, test-multiple-installations, test-url-formats, test-api-availability, test-rhel8]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -293,7 +336,8 @@ jobs:
              [[ "${{ needs.test-installation-paths.result }}" != "success" ]] || \
              [[ "${{ needs.test-multiple-installations.result }}" != "success" ]] || \
              [[ "${{ needs.test-url-formats.result }}" != "success" ]] || \
-             [[ "${{ needs.test-api-availability.result }}" != "success" ]]; then
+             [[ "${{ needs.test-api-availability.result }}" != "success" ]] || \
+             [[ "${{ needs.test-rhel8.result }}" != "success" ]]; then
             echo "❌ Some tests failed"
             exit 1
           fi
@@ -311,3 +355,4 @@ jobs:
           echo "| Multiple Installations | ${{ needs.test-multiple-installations.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| URL Format Compatibility | ${{ needs.test-url-formats.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| API Availability | ${{ needs.test-api-availability.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| RHEL8 Compatibility | ${{ needs.test-rhel8.result == 'success' && '✅ PASS' || '❌ FAIL' }} |" >> $GITHUB_STEP_SUMMARY
