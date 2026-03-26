@@ -117,7 +117,7 @@ fi
 
 # Test 7: Check for version compatibility in tests
 echo "📋 Test 7: Checking test version coverage..."
-if grep -q "v0.31.5" .github/workflows/test.yml && \
+if grep -q "v0.31.4" .github/workflows/test.yml && \
    grep -q "v0.31.3" .github/workflows/test.yml && \
    grep -q "v0.28.5" .github/workflows/test.yml; then
     echo "✅ Test workflow covers multiple buildcache versions"
@@ -151,11 +151,11 @@ fi
 # Test 10: Validate archive extraction and PATH logic
 echo "📋 Test 10: Validating archive extraction and PATH logic..."
 
-# Check Linux dependency installation
-if grep -q "apt-get.*libssl" action.yml; then
-    echo "✅ Linux installs required dependencies"
+# Check Linux does NOT install OpenSSL (no longer required)
+if ! grep -q "apt-get.*libssl" action.yml; then
+    echo "✅ Linux does not install OpenSSL (no longer required)"
 else
-    echo "❌ Linux dependency installation missing"
+    echo "❌ Linux still installs OpenSSL which is no longer required"
     exit 1
 fi
 

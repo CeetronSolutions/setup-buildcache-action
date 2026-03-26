@@ -96,7 +96,6 @@ The action extracts buildcache to a version-specific directory in the user's hom
 - Avoids requiring administrator privileges for binary installation
 - Supports multiple buildcache versions simultaneously  
 - Keeps installations isolated and manageable
-- Automatically installs required system dependencies (OpenSSL libraries on Linux)
 
 ## Using buildcache with CMake
 
