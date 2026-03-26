@@ -54,7 +54,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        version: [v0.31.3, v0.30.0, v0.28.5]
+        version: [v0.31.3, v0.30.0, v0.28.5, latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -71,13 +71,21 @@ jobs:
           VERSION=$(buildcache --version)
           echo "Installed version: $VERSION"
           EXPECTED="${{ matrix.version }}"
-          # Remove 'v' prefix for comparison
-          EXPECTED_NUM="${EXPECTED#v}"
-          if [[ ! "$VERSION" =~ BuildCache.*version.*$EXPECTED_NUM ]]; then
-            echo "Error: Expected version $EXPECTED_NUM but got $VERSION"
-            exit 1
+          if [ "$EXPECTED" = "latest" ]; then
+            if [[ ! "$VERSION" =~ BuildCache.*version.*[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+              echo "Error: Expected a valid version but got $VERSION"
+              exit 1
+            fi
+            echo "✅ Latest version installed"
+          else
+            # Remove 'v' prefix for comparison
+            EXPECTED_NUM="${EXPECTED#v}"
+            if [[ ! "$VERSION" =~ BuildCache.*version.*$EXPECTED_NUM ]]; then
+              echo "Error: Expected version $EXPECTED_NUM but got $VERSION"
+              exit 1
+            fi
+            echo "✅ Correct version $EXPECTED installed"
           fi
-          echo "✅ Correct version $EXPECTED installed"
 
   test-invalid-version:
     name: Test invalid version handling
@@ -204,16 +212,16 @@ jobs:
       - name: Install second version (upgrade)
         uses: ./
         with:
-          version: v0.31.4
+          version: latest
 
       - name: Verify upgrade
         run: |
           VERSION=$(buildcache --version)
-          if [[ ! "$VERSION" =~ BuildCache.*version.*0\.31\.4 ]]; then
-            echo "Error: Upgrade failed - expected 0.31.4 but got: $VERSION"
+          if [[ ! "$VERSION" =~ BuildCache.*version.*[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "Error: Upgrade to latest failed - invalid version: $VERSION"
             exit 1
           fi
-          echo "✅ Upgrade successful"
+          echo "✅ Upgrade to latest version successful"
 
   test-url-formats:
     name: Test different URL formats
@@ -221,6 +229,8 @@ jobs:
     strategy:
       matrix:
         include:
+          - version: latest
+            format: "new (latest)"
           - version: v0.31.4
             format: "new (v0.31.4+)"
           - version: v0.31.3
@@ -242,10 +252,17 @@ jobs:
         run: |
           VERSION=$(buildcache --version)
           EXPECTED="${{ matrix.version }}"
-          EXPECTED_NUM="${EXPECTED#v}"
-          if [[ ! "$VERSION" =~ BuildCache.*version.*$EXPECTED_NUM ]]; then
-            echo "Error: Expected version $EXPECTED_NUM but got $VERSION"
-            exit 1
+          if [ "$EXPECTED" = "latest" ]; then
+            if [[ ! "$VERSION" =~ BuildCache.*version.*[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+              echo "Error: Expected a valid version but got $VERSION"
+              exit 1
+            fi
+          else
+            EXPECTED_NUM="${EXPECTED#v}"
+            if [[ ! "$VERSION" =~ BuildCache.*version.*$EXPECTED_NUM ]]; then
+              echo "Error: Expected version $EXPECTED_NUM but got $VERSION"
+              exit 1
+            fi
           fi
           echo "✅ ${{ matrix.version }} installed correctly using ${{ matrix.format }} URL format"
 
