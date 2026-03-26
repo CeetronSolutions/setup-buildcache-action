@@ -1,6 +1,6 @@
 # Setup buildcache GitHub Action
 
-This GitHub Action installs [buildcache](https://gitlab.com/bits-n-bites/buildcache) and adds it to the PATH for both Windows and Linux runners.
+This GitHub Action installs [https://gitlab.com/bits-n-bites/buildcache](https://gitlab.com/bits-n-bites/buildcache) and adds it to the PATH for both Windows and Linux runners.
 
 ## Features
 
