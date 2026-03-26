@@ -1,6 +1,6 @@
 name: 'Setup buildcache'
-description: 'Install buildcache and add it to PATH for Windows and Linux'
-author: 'Your Name'
+description: 'Install buildcache (https://gitlab.com/bits-n-bites/buildcache) and add it to PATH for Windows and Linux'
+author: 'CeetronSolutions'
 
 inputs:
   version:
