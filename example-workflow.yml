@@ -1,4 +1,5 @@
 name: Example Workflow with buildcache
+# buildcache: https://gitlab.com/bits-n-bites/buildcache
 
 on:
   push:
