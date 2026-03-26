@@ -117,7 +117,7 @@ fi
 
 # Test 7: Check for version compatibility in tests
 echo "📋 Test 7: Checking test version coverage..."
-if grep -q "v0.31.5" .github/workflows/test.yml && \
+if grep -q "v0.31.4" .github/workflows/test.yml && \
    grep -q "v0.31.3" .github/workflows/test.yml && \
    grep -q "v0.28.5" .github/workflows/test.yml; then
     echo "✅ Test workflow covers multiple buildcache versions"

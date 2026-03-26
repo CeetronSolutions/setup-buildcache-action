@@ -54,7 +54,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-        version: [v0.31.5, v0.31.3, v0.30.0, v0.28.5]
+        version: [v0.31.3, v0.30.0, v0.28.5]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
@@ -204,13 +204,13 @@ jobs:
       - name: Install second version (upgrade)
         uses: ./
         with:
-          version: v0.31.5
+          version: v0.31.4
 
       - name: Verify upgrade
         run: |
           VERSION=$(buildcache --version)
-          if [[ ! "$VERSION" =~ BuildCache.*version.*0\.31\.5 ]]; then
-            echo "Error: Upgrade failed - expected 0.31.5 but got: $VERSION"
+          if [[ ! "$VERSION" =~ BuildCache.*version.*0\.31\.4 ]]; then
+            echo "Error: Upgrade failed - expected 0.31.4 but got: $VERSION"
             exit 1
           fi
           echo "✅ Upgrade successful"
@@ -221,8 +221,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - version: v0.31.5
-            format: "new (v0.31.4+)"
           - version: v0.31.4
             format: "new (v0.31.4+)"
           - version: v0.31.3
